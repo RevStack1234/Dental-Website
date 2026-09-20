@@ -83,7 +83,7 @@ const treatmentImages = [
   '/images/before-after/WhatsApp Image 2026-09-01 at 12.13.04 PM.webp',
   '/images/before-after/WhatsApp Image 2026-09-01 at 12.13.05 PM (2).webp',
   '/images/before-after/WhatsApp Image 2026-09-01 at 12.13.05 PM.webp',
-  '/images/before-after/WhatsApp Image 2026-09-01 at 12.13.06 PM (1).webp',
+  '/images/before-after/WhatsApp Image 2026-09-01 at 12.13.06 PM (1).png',
 ]
 
 const galleryImages = [
@@ -265,16 +265,14 @@ export default function Gallery() {
           {[...treatmentImages, ...treatmentImages, ...treatmentImages, ...treatmentImages].map((src, idx) => (
             <div
               key={idx}
-              className="relative group overflow-hidden rounded-xl lg:rounded-2xl bg-white shadow-md border border-gray-100 shrink-0 w-[140px] sm:w-[160px] md:w-[200px] lg:w-[240px] aspect-[9/16]"
+              className="relative group overflow-hidden rounded-xl lg:rounded-2xl bg-white shadow-md border border-gray-100 shrink-0 h-[240px] sm:h-[280px] md:h-[320px] lg:h-[360px]"
             >
-              <div className="w-full h-full overflow-hidden rounded-lg lg:rounded-xl bg-gray-50">
-                <img
-                  src={src}
-                  alt={`Treatment result ${(idx % treatmentImages.length) + 1}`}
-                  className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
-                  loading="lazy"
-                />
-              </div>
+              <img
+                src={src}
+                alt={`Treatment result ${(idx % treatmentImages.length) + 1}`}
+                className="block w-auto h-full object-cover transform transition-transform duration-700 group-hover:scale-105 bg-gray-50"
+                loading="lazy"
+              />
             </div>
           ))}
         </div>

@@ -39,7 +39,7 @@ export default function About() {
           titleColor="text-[#28231F]"
           titleFont="font-fraunces"
           height="lg:h-[max(100vh,800px)]"
-          backgroundImage="/images/about/abouthero.webp"
+          backgroundImage="/images/about/team-2.png"
           hideCollage={true}
           className="h-about-hero"
         >

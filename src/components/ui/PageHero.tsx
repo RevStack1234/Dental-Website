@@ -47,7 +47,7 @@ export default function PageHero({
             decoding="async"
             className={`absolute inset-0 w-full h-full z-0 ${bgPosition}`}
           />
-          <div className="absolute inset-0 w-full h-full bg-white/85 lg:bg-transparent lg:bg-gradient-to-r lg:from-white/95 lg:via-white/70 lg:to-transparent z-0" />
+          <div className="absolute inset-0 w-full h-full bg-white/85 lg:bg-transparent lg:bg-gradient-to-r lg:from-white/95 lg:from-0% lg:via-white/70 lg:via-[40%] lg:to-transparent lg:to-[70%] z-0" />
         </>
       )}
       <div className="relative w-full lg:w-[1440px] h-full z-10 h-ph-inner">

@@ -41,7 +41,7 @@ export default function Services() {
     if (itemParam) {
       setExpandedItem(itemParam)
       setShowAll(true)
-      
+
       const foundItem = treatments.find(t => t.title === itemParam)
       if (foundItem?.subtypes) {
         // If they asked for a specific subtype, maybe just open that one, or all of them.
@@ -91,7 +91,7 @@ export default function Services() {
           titleColor="text-[#28231F]"
           titleFont="font-fraunces lg:!text-[62px] !leading-[1.06] tracking-[0.01em]"
           height="lg:h-[max(100vh,800px)]"
-          backgroundImage="/images/about/treatment hero.webp"
+          backgroundImage="/images/treatment-images/hero.png"
           hideCollage={true}
           className="h-svc-hero"
         >
@@ -126,11 +126,10 @@ export default function Services() {
                       setExpandedItem(null)
                       setExpandedSubtypes([])
                     }}
-                    className={`flex items-center justify-center h-[36px] lg:h-[40px] rounded-[18px] px-3.5 lg:px-5 font-poppins text-[12px] lg:text-[13px] font-medium transition-colors whitespace-nowrap ${
-                      isActive
-                        ? 'bg-[#D35B8F] text-white border border-[#D35B8F]'
-                        : 'border border-[#D35B8F] bg-white text-[#404040] hover:bg-[#D35B8F]/5'
-                    }`}
+                    className={`flex items-center justify-center h-[36px] lg:h-[40px] rounded-[18px] px-3.5 lg:px-5 font-poppins text-[12px] lg:text-[13px] font-medium transition-colors whitespace-nowrap ${isActive
+                      ? 'bg-[#D35B8F] text-white border border-[#D35B8F]'
+                      : 'border border-[#D35B8F] bg-white text-[#404040] hover:bg-[#D35B8F]/5'
+                      }`}
                   >
                     {cat}
                   </button>
@@ -160,7 +159,7 @@ export default function Services() {
                       } else {
                         setExpandedSubtypes([])
                       }
-                      
+
                       if (willExpand) {
                         setTimeout(() => {
                           const el = document.getElementById(`treatment-${item.title}`)
@@ -214,7 +213,7 @@ export default function Services() {
                                     className="flex w-full items-center justify-between p-4 lg:px-6 lg:py-5 cursor-pointer hover:bg-gray-50 transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      setExpandedSubtypes(prev => 
+                                      setExpandedSubtypes(prev =>
                                         isSubExpanded ? prev.filter(t => t !== sub.title) : [...prev, sub.title]
                                       )
                                     }}
@@ -241,11 +240,10 @@ export default function Services() {
                                     <div className="p-4 lg:p-6 pt-0 flex flex-col lg:flex-row gap-5 lg:gap-[40px] border-t border-gray-100 mt-2">
                                       <img
                                         src={sub.image || `/treatment/${encodeURIComponent(sub.title)}.webp`}
-                                        className={`shrink-0 bg-[#F3F4F6] mx-auto lg:mx-0 rounded-[12px] ${
-                                          (sub as any).isVerticalImage
-                                            ? 'w-full max-w-[250px] lg:w-[250px] h-auto object-contain max-h-[250px]'
-                                            : 'w-full max-w-[300px] lg:w-[260px] h-auto aspect-[300/160] lg:h-[140px] object-cover'
-                                        }`}
+                                        className={`shrink-0 bg-[#F3F4F6] mx-auto lg:mx-0 rounded-[12px] ${(sub as any).isVerticalImage
+                                          ? 'w-full max-w-[250px] lg:w-[250px] h-auto object-contain max-h-[250px]'
+                                          : 'w-full max-w-[300px] lg:w-[260px] h-auto aspect-[300/160] lg:h-[140px] object-cover'
+                                          }`}
                                         alt={sub.title}
                                         style={{ objectPosition: (sub as any).imagePosition || 'center' }}
                                         onError={(e) => {
@@ -275,11 +273,10 @@ export default function Services() {
                         <div className="flex flex-col lg:flex-row gap-5 lg:gap-[74px]">
                           <img
                             src={item.image || `/treatment/${encodeURIComponent(item.title)}.webp`}
-                            className={`shrink-0 bg-[#F3F4F6] mx-auto lg:mx-0 rounded-[14px] lg:rounded-[16px] ${
-                              item.isVerticalImage
-                                ? 'w-full max-w-[250px] lg:w-[250px] h-auto object-contain max-h-[300px]'
-                                : 'w-full max-w-[300px] lg:w-[300px] h-auto aspect-[300/160] lg:h-[160px] object-cover'
-                            }`}
+                            className={`shrink-0 bg-[#F3F4F6] mx-auto lg:mx-0 rounded-[14px] lg:rounded-[16px] ${item.isVerticalImage
+                              ? 'w-full max-w-[250px] lg:w-[250px] h-auto object-contain max-h-[300px]'
+                              : 'w-full max-w-[300px] lg:w-[300px] h-auto aspect-[300/160] lg:h-[160px] object-cover'
+                              }`}
                             alt={item.title}
                             onError={(e) => {
                               e.currentTarget.style.display = 'none'
