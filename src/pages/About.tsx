@@ -189,7 +189,7 @@ export default function About() {
         <div className="mt-8 w-full bg-[#F9F4F1] py-24 flex justify-center z-10 h-gtk-sec">
           <div className="flex w-[1280px] items-center justify-between gap-16 h-gtk-row">
             <Reveal x={-30} duration={0.8} className="w-[45%] flex flex-col gap-4 h-gtk-t">
-              <SectionPill>04 · CLINIC STANDARDS</SectionPill>
+              <SectionPill>03 · CLINIC STANDARDS</SectionPill>
               <h2 className="font-poppins text-[42px] font-semibold leading-[1.2] text-[#28231F] mt-2 h-gtk-h">
                 Uncompromising Quality & Care
               </h2>
