@@ -84,9 +84,12 @@ export function useAppointmentForm() {
       return
     }
 
-    const selectedDate = new Date(formData.date)
-    const now = new Date()
-    if (selectedDate < now) {
+    // Compare YYYY-MM-DDTHH:mm strings (no seconds) so a valid 5-min slot is never
+    // falsely rejected because the wall-clock seconds crept past the selection.
+    const nowStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16)   // "YYYY-MM-DDTHH:mm"
+    if (formData.date < nowStr) {
       setStatus('error')
       setErrorMessage('Booking date and time cannot be in the past.')
       return
@@ -111,7 +114,7 @@ export function useAppointmentForm() {
     setErrorMessage('')
 
     try {
-      const finalTreatment = formData.subTreatment 
+      const finalTreatment = formData.subTreatment
         ? `${formData.treatment} - ${formData.subTreatment}`
         : formData.treatment
 

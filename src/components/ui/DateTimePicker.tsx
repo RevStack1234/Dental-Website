@@ -6,6 +6,16 @@ const MONTHS = [
 ]
 const DAY_HEADERS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const HOURS_12 = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+const MINUTES_5 = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
+
+/** Round a minute value UP to the nearest 5-min boundary. Returns {min, hourBump}. */
+function roundUpTo5(minute: number): { min: number; hourBump: boolean } {
+  const rem = minute % 5
+  if (rem === 0) return { min: minute, hourBump: false }
+  const rounded = minute + (5 - rem)
+  if (rounded >= 60) return { min: 0, hourBump: true }
+  return { min: rounded, hourBump: false }
+}
 
 interface DateTimePickerProps {
   value: string                    // "YYYY-MM-DDTHH:mm"
@@ -60,13 +70,21 @@ function buildVal(y: number, mo: number, d: number, h24: number, min: number): s
   return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}T${String(h24).padStart(2, '0')}:${String(min).padStart(2, '0')}`
 }
 
+// ── Clinic hours ──────────────────────────────────────────────────────────
+// Mon–Sat: 10 AM–2 PM (10–14) and 7 PM–8 PM (19–20)
+// Sun:     10 AM–2 PM (10–14) only
 function getClinicRanges(dayOfWeek: number): [number, number][] {
   if (dayOfWeek === 0) return [[10, 14]]
   return [[10, 14], [17, 20]]
 }
 
-function isClinicH24Valid(h24: number, dayOfWeek: number): boolean {
+function isClinicOpen(h24: number, dayOfWeek: number): boolean {
   return getClinicRanges(dayOfWeek).some(([s, e]) => h24 >= s && h24 <= e)
+}
+
+/** Return the first valid clinic hour (h24) for the given day, or 10 as default. */
+function firstClinicH24(dayOfWeek: number): number {
+  return getClinicRanges(dayOfWeek)[0][0] // always 10
 }
 
 export default function DateTimePicker({
@@ -84,11 +102,11 @@ export default function DateTimePicker({
   const [calYear, setCalYear] = useState(() => parsed?.year ?? today.getFullYear())
   const [calMonth, setCalMonth] = useState(() => parsed ? parsed.month - 1 : today.getMonth())
 
-  const [timeH12, setTimeH12] = useState(() => parsed?.hour12 ?? (today.getHours() % 12 || 12))
-  const [timeMin, setTimeMin] = useState(() => parsed?.minute ?? today.getMinutes())
-  const [timeAmpm, setTimeAmpm] = useState<'AM' | 'PM'>(() => parsed?.ampm ?? (today.getHours() >= 12 ? 'PM' : 'AM'))
+  const [timeH12, setTimeH12] = useState(() => parsed?.hour12 ?? 10)
+  const [timeMin, setTimeMin] = useState(() => parsed?.minute ?? 0)
+  const [timeAmpm, setTimeAmpm] = useState<'AM' | 'PM'>(() => parsed?.ampm ?? 'AM')
 
-  // Sync state when value changes
+  // Sync state when value changes externally
   useEffect(() => {
     const p = parseVal(value)
     if (p) {
@@ -126,7 +144,9 @@ export default function DateTimePicker({
     return () => clearTimeout(timer)
   }, [open])
 
-  // ── Disabled helpers ──────────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  /** Is the given calendar date before the min date? */
   function isDateDisabled(y: number, m: number, d: number): boolean {
     if (!minParsed) return false
     if (y !== minParsed.year) return y < minParsed.year
@@ -134,60 +154,68 @@ export default function DateTimePicker({
     return d < minParsed.day
   }
 
+  /** Effective minimum hour24 on today (accounting for 5-min rounding). */
+  function effectiveMin(): { hour24: number; minute: number } | null {
+    if (!minParsed || !parsed) return null
+    if (parsed.year !== minParsed.year || parsed.month !== minParsed.month || parsed.day !== minParsed.day) return null
+    const { min: snappedMin, hourBump } = roundUpTo5(minParsed.minute)
+    return { hour24: minParsed.hour24 + (hourBump ? 1 : 0), minute: snappedMin }
+  }
+
   function isHourDisabled(h12: number, ampm: 'AM' | 'PM'): boolean {
     const h24 = to24(h12, ampm)
-
-    // Clinic hours check (only when a date is selected)
+    // Clinic hours — only enforced when a date is selected
     if (parsed) {
       const dw = new Date(parsed.year, parsed.month - 1, parsed.day).getDay()
-      if (!isClinicH24Valid(h24, dw)) return true
+      if (!isClinicOpen(h24, dw)) return true
     }
-
     // Past-time check
-    if (!minParsed || !parsed) return false
-    if (parsed.year !== minParsed.year || parsed.month !== minParsed.month || parsed.day !== minParsed.day) return false
-    return h24 < minParsed.hour24
+    const em = effectiveMin()
+    if (!em) return false
+    return h24 < em.hour24
   }
 
   function isMinuteDisabled(m: number, h12 = timeH12, ampm = timeAmpm): boolean {
-    if (!minParsed || !parsed) return false
-    if (parsed.year !== minParsed.year || parsed.month !== minParsed.month || parsed.day !== minParsed.day) return false
+    const em = effectiveMin()
+    if (!em) return false
     const h24 = to24(h12, ampm)
-    if (h24 > minParsed.hour24) return false
-    if (h24 < minParsed.hour24) return true
-    return m < minParsed.minute
+    if (h24 > em.hour24) return false
+    if (h24 < em.hour24) return true
+    return m < em.minute
   }
 
-  // ── Emit helpers ─────────────────────────────────────────────────────────
+  // ── Emit ─────────────────────────────────────────────────────────────────
   function emit(y: number, mo: number, d: number, h12: number, m: number, ampm: 'AM' | 'PM') {
     onChange(buildVal(y, mo, d, to24(h12, ampm), m))
   }
 
-  // Select a day — auto-resets time to 10:00 AM if current time is outside clinic hours
   function handleSelectDay(y: number, mo: number, d: number) {
     const dw = new Date(y, mo - 1, d).getDay()
     let h12 = timeH12, min = timeMin, ampm = timeAmpm
 
-    if (!isClinicH24Valid(to24(h12, ampm), dw)) {
-      h12 = 10; min = 0; ampm = 'AM'
-      setTimeH12(10)
-      setTimeMin(0)
-      setTimeAmpm('AM')
+    // Snap to first clinic slot if current time is outside clinic hours for this day
+    if (!isClinicOpen(to24(h12, ampm), dw)) {
+      h12 = firstClinicH24(dw); min = 0; ampm = 'AM'
+      setTimeH12(h12); setTimeMin(0); setTimeAmpm('AM')
     }
+
+    // Fix past time (only relevant when selecting today)
+    const { min: snappedMin, hourBump } = roundUpTo5(minParsed?.minute ?? 0)
+    const minH24 = minParsed ? minParsed.hour24 + (hourBump ? 1 : 0) : 0
+    const minMin = minParsed ? snappedMin : 0
 
     if (minParsed && y === minParsed.year && mo === minParsed.month && d === minParsed.day) {
       const h24 = to24(h12, ampm)
-      if (h24 < minParsed.hour24 || (h24 === minParsed.hour24 && min < minParsed.minute)) {
-        h12 = minParsed.hour12; min = minParsed.minute; ampm = minParsed.ampm
-        setTimeH12(minParsed.hour12)
-        setTimeMin(minParsed.minute)
-        setTimeAmpm(minParsed.ampm)
-        if (!isClinicH24Valid(to24(h12, ampm), dw)) {
-          h12 = 10; min = 0; ampm = 'AM'
-          setTimeH12(10)
-          setTimeMin(0)
-          setTimeAmpm('AM')
+      if (h24 < minH24 || (h24 === minH24 && min < minMin)) {
+        let effectiveH24 = minH24
+        // If the effective minimum is outside clinic hours, jump to next open slot
+        if (!isClinicOpen(effectiveH24, dw)) {
+          effectiveH24 = getClinicRanges(dw).find(([s]) => s > effectiveH24)?.[0] ?? firstClinicH24(dw)
         }
+        h12 = effectiveH24 === 0 ? 12 : effectiveH24 > 12 ? effectiveH24 - 12 : effectiveH24
+        min = isClinicOpen(effectiveH24, dw) ? minMin : 0
+        ampm = effectiveH24 >= 12 ? 'PM' : 'AM'
+        setTimeH12(h12); setTimeMin(min); setTimeAmpm(ampm)
       }
     }
 
@@ -199,9 +227,10 @@ export default function DateTimePicker({
     if (parsed) {
       const h24 = to24(h, timeAmpm)
       let min = timeMin
-      if (minParsed && parsed.year === minParsed.year && parsed.month === minParsed.month && parsed.day === minParsed.day) {
-        if (h24 < minParsed.hour24) min = 59
-        else if (h24 === minParsed.hour24 && min < minParsed.minute) min = minParsed.minute
+      const em = effectiveMin()
+      if (em) {
+        if (h24 < em.hour24) min = 55
+        else if (h24 === em.hour24 && min < em.minute) min = em.minute
       }
       setTimeMin(min)
       emit(parsed.year, parsed.month, parsed.day, h, min, timeAmpm)
@@ -220,41 +249,40 @@ export default function DateTimePicker({
       let h12 = timeH12
       let m = timeMin
       let finalAp = ap
-      
-      if (!isClinicH24Valid(h24, dw)) {
-         const ranges = getClinicRanges(dw)
-         const validH24s: number[] = []
-         ranges.forEach(([s, e]) => {
-           for(let i=s; i<=e; i++) validH24s.push(i)
-         })
-         const ampmH24s = validH24s.filter(h => (h >= 12 ? 'PM' : 'AM') === ap)
-         
-         if (ampmH24s.length > 0) {
-           h24 = ampmH24s[0]
-           h12 = h24 > 12 ? h24 - 12 : (h24 === 0 ? 12 : h24)
-           m = 0
-         } else {
-           h24 = 10
-           h12 = 10
-           m = 0
-           finalAp = 'AM'
-         }
-      }
 
-      if (minParsed && parsed.year === minParsed.year && parsed.month === minParsed.month && parsed.day === minParsed.day) {
-        if (h24 < minParsed.hour24) {
-          h24 = minParsed.hour24
-          h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24
-          finalAp = h24 >= 12 ? 'PM' : 'AM'
-          m = minParsed.minute
-        } else if (h24 === minParsed.hour24 && m < minParsed.minute) {
-          m = minParsed.minute
+      // If switching AM/PM lands outside clinic hours, find first valid h24 for that period
+      if (!isClinicOpen(h24, dw)) {
+        const ranges = getClinicRanges(dw)
+        const validH24s: number[] = []
+        ranges.forEach(([s, e]) => { for (let i = s; i <= e; i++) validH24s.push(i) })
+        const periodH24s = validH24s.filter(h => (h >= 12 ? 'PM' : 'AM') === ap)
+        if (periodH24s.length > 0) {
+          h24 = periodH24s[0]
+          h12 = h24 > 12 ? h24 - 12 : (h24 === 0 ? 12 : h24)
+          m = 0
+        } else {
+          // No clinic hours in this period — stay on AM at 10:00
+          h24 = 10; h12 = 10; m = 0; finalAp = 'AM'
         }
       }
 
-      setTimeH12(h12)
-      setTimeMin(m)
-      setTimeAmpm(finalAp)
+      // Ensure we're not in the past
+      const em = effectiveMin()
+      if (em) {
+        if (h24 < em.hour24) {
+          h24 = em.hour24
+          if (!isClinicOpen(h24, dw)) {
+            h24 = getClinicRanges(dw).find(([s]) => s > h24)?.[0] ?? firstClinicH24(dw)
+          }
+          h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24
+          finalAp = h24 >= 12 ? 'PM' : 'AM'
+          m = em.minute
+        } else if (h24 === em.hour24 && m < em.minute) {
+          m = em.minute
+        }
+      }
+
+      setTimeH12(h12); setTimeMin(m); setTimeAmpm(finalAp)
       emit(parsed.year, parsed.month, parsed.day, h12, m, finalAp)
     } else {
       setTimeAmpm(ap)
@@ -266,31 +294,31 @@ export default function DateTimePicker({
     const y = now.getFullYear()
     const mo = now.getMonth() + 1
     const d = now.getDate()
-
-    if (minParsed && (y < minParsed.year || (y === minParsed.year && (mo < minParsed.month || (mo === minParsed.month && d < minParsed.day))))) {
-      return
-    }
-
-    let h24 = now.getHours()
-    let min = now.getMinutes()
     const dw = now.getDay()
-    
-    if (!isClinicH24Valid(h24, dw)) {
-      h24 = 10
-      min = 0
+
+    if (minParsed && (y < minParsed.year || (y === minParsed.year && (mo < minParsed.month || (mo === minParsed.month && d < minParsed.day))))) return
+
+    const { min: snappedMin, hourBump } = roundUpTo5(now.getMinutes())
+    let h24 = now.getHours() + (hourBump ? 1 : 0)
+    let min = snappedMin
+
+    // If current (snapped) time is outside clinic hours, use first open slot
+    if (!isClinicOpen(h24, dw)) {
+      h24 = firstClinicH24(dw); min = 0
     }
 
     if (minParsed && y === minParsed.year && mo === minParsed.month && d === minParsed.day) {
-      if (h24 < minParsed.hour24 || (h24 === minParsed.hour24 && min < minParsed.minute)) {
-        h24 = minParsed.hour24
-        min = minParsed.minute
-        if (!isClinicH24Valid(h24, dw)) {
-          h24 = 10
+      const { min: mMin, hourBump: hb } = roundUpTo5(minParsed.minute)
+      const em = { hour24: minParsed.hour24 + (hb ? 1 : 0), minute: mMin }
+      if (h24 < em.hour24 || (h24 === em.hour24 && min < em.minute)) {
+        h24 = em.hour24; min = em.minute
+        if (!isClinicOpen(h24, dw)) {
+          h24 = getClinicRanges(dw).find(([s]) => s > h24)?.[0] ?? firstClinicH24(dw)
           min = 0
         }
       }
     }
-    
+
     onChange(buildVal(y, mo, d, h24, min))
     setOpen(false)
   }
@@ -310,7 +338,7 @@ export default function DateTimePicker({
     else setCalMonth(m => m + 1)
   }
 
-  // ── Build calendar grid (6 rows × 7 cols = 42 cells) ─────────────────────
+  // ── Calendar grid ─────────────────────────────────────────────────────────
   const daysInMonth = getDaysInMonth(calYear, calMonth)
   const firstDay = getFirstDayOfMonth(calYear, calMonth)
   const prevDays = getDaysInMonth(calYear, calMonth === 0 ? 11 : calMonth - 1)
@@ -322,8 +350,6 @@ export default function DateTimePicker({
     cells.push({ day: i, type: 'curr' })
   for (let i = 1; cells.length < 42; i++)
     cells.push({ day: i, type: 'next' })
-
-  const minutes = Array.from({ length: 60 }, (_, i) => i)
 
   return (
     <div ref={wrapRef} className={`relative ${className}`}>
@@ -410,7 +436,6 @@ export default function DateTimePicker({
               <div className="grid grid-cols-7 gap-y-0.5">
                 {cells.map((cell, i) => {
                   if (cell.type === 'prev') {
-                    // Prev month ka year/month
                     const pMonth = calMonth === 0 ? 11 : calMonth - 1
                     const pYear = calMonth === 0 ? calYear - 1 : calYear
                     const disabled = isDateDisabled(pYear, pMonth + 1, cell.day)
@@ -419,11 +444,7 @@ export default function DateTimePicker({
                         <button
                           type="button"
                           disabled={disabled}
-                          onClick={() => {
-                            if (disabled) return
-                            prevMonth()
-                            handleSelectDay(pYear, pMonth + 1, cell.day)
-                          }}
+                          onClick={() => { if (disabled) return; prevMonth(); handleSelectDay(pYear, pMonth + 1, cell.day) }}
                           className={[
                             'w-8 h-8 rounded-full font-poppins text-[12px] flex items-center justify-center transition-all',
                             disabled ? 'text-gray-200 cursor-not-allowed' : 'text-gray-300 hover:bg-blue-50 hover:text-[#165ba7] cursor-pointer',
@@ -436,7 +457,6 @@ export default function DateTimePicker({
                   }
 
                   if (cell.type === 'next') {
-                    // Next month ka year/month
                     const nMonth = calMonth === 11 ? 0 : calMonth + 1
                     const nYear = calMonth === 11 ? calYear + 1 : calYear
                     const disabled = isDateDisabled(nYear, nMonth + 1, cell.day)
@@ -445,11 +465,7 @@ export default function DateTimePicker({
                         <button
                           type="button"
                           disabled={disabled}
-                          onClick={() => {
-                            if (disabled) return
-                            nextMonth()
-                            handleSelectDay(nYear, nMonth + 1, cell.day)
-                          }}
+                          onClick={() => { if (disabled) return; nextMonth(); handleSelectDay(nYear, nMonth + 1, cell.day) }}
                           className={[
                             'w-8 h-8 rounded-full font-poppins text-[12px] flex items-center justify-center transition-all',
                             disabled ? 'text-gray-200 cursor-not-allowed' : 'text-gray-300 hover:bg-blue-50 hover:text-[#165ba7] cursor-pointer',
@@ -530,13 +546,13 @@ export default function DateTimePicker({
               {/* Colon */}
               <div className="font-poppins text-gray-400 font-bold text-[16px] mt-[10px] px-0.5 shrink-0">:</div>
 
-              {/* Minutes scroll */}
+              {/* Minutes scroll — 5-min intervals only */}
               <div
                 ref={minuteRef}
                 className="h-[196px] overflow-y-auto flex flex-col gap-0.5 w-11"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                {minutes.map(m => {
+                {MINUTES_5.map(m => {
                   const disabled = isMinuteDisabled(m)
                   const sel = timeMin === m
                   return (

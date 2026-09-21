@@ -83,7 +83,15 @@ export default function BookAppointment() {
             <DateTimePicker
               value={formData.date}
               onChange={setDate}
-              min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+              min={(() => {
+                const now = new Date()
+                const rem = now.getMinutes() % 5
+                const snapped = rem === 0 ? now.getMinutes() : now.getMinutes() + (5 - rem)
+                const overflow = snapped >= 60
+                const d = new Date(now)
+                d.setHours(now.getHours() + (overflow ? 1 : 0), overflow ? 0 : snapped, 0, 0)
+                return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+              })()}
               placeholder="Preferred Date & Time *"
             />
 
