@@ -92,7 +92,7 @@ export default function BookAppointment() {
                 d.setHours(now.getHours() + (overflow ? 1 : 0), overflow ? 0 : snapped, 0, 0)
                 return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
               })()}
-              placeholder="Preferred Date & Time *"
+              placeholder="Preferred Date *"
             />
 
             <div className="relative">
@@ -105,8 +105,8 @@ export default function BookAppointment() {
                 className={`w-full h-[46px] border ${isDropdownOpen ? 'border-[#165ba7]' : 'border-gray-200/80'} rounded-md px-4 font-poppins text-[14px] flex items-center justify-between cursor-pointer transition-colors bg-white`}
               >
                 <span className={formData.treatment ? 'text-[#333] font-medium' : 'text-gray-500'}>
-                  {formData.subTreatment 
-                    ? `${formData.treatment} - ${formData.subTreatment}` 
+                  {formData.subTreatment
+                    ? `${formData.treatment} - ${formData.subTreatment}`
                     : formData.treatment || 'Treatment Required *'}
                 </span>
                 <div
