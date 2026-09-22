@@ -91,6 +91,7 @@ export default function DateTimePicker({
   value, onChange, min, className = '', id, placeholder,
 }: DateTimePickerProps) {
   const [open, setOpen] = useState(false)
+  const [step, setStep] = useState<'date' | 'time'>('date')
   const wrapRef = useRef<HTMLDivElement>(null)
   const hourRef = useRef<HTMLDivElement>(null)
   const minuteRef = useRef<HTMLDivElement>(null)
@@ -220,6 +221,7 @@ export default function DateTimePicker({
     }
 
     emit(y, mo, d, h12, min, ampm)
+    setStep('time')
   }
 
   function handleHour(h: number) {
@@ -320,7 +322,7 @@ export default function DateTimePicker({
     }
 
     onChange(buildVal(y, mo, d, h24, min))
-    setOpen(false)
+    setStep('time')
   }
 
   function handleClear() {
@@ -358,8 +360,20 @@ export default function DateTimePicker({
         id={id}
         role="button"
         tabIndex={0}
-        onClick={() => setOpen(o => !o)}
-        onKeyDown={e => e.key === 'Enter' && setOpen(o => !o)}
+        onClick={() => {
+          setOpen(o => {
+            if (!o) setStep('date')
+            return !o
+          })
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            setOpen(o => {
+              if (!o) setStep('date')
+              return !o
+            })
+          }
+        }}
         className={`
           w-full h-[40px] lg:h-[46px] border rounded-md px-3 lg:px-4
           font-poppins text-[13px] lg:text-[14px] flex items-center justify-between
@@ -390,14 +404,15 @@ export default function DateTimePicker({
         <div
           className="absolute right-0 top-[calc(100%+8px)] z-[999] bg-white rounded-2xl overflow-hidden"
           style={{
-            minWidth: 460,
+            minWidth: 320,
             boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08)',
             border: '1px solid rgba(0,0,0,0.06)',
           }}
         >
-          <div className="flex">
-            {/* ── Calendar ── */}
-            <div className="flex-1 p-4 pb-3">
+          <div>
+            {step === 'date' ? (
+            <div className="flex-1 p-4 pb-3 w-[320px]">
+              {/* ── Calendar ── */}
               {/* Month navigation */}
               <div className="flex items-center justify-between mb-4">
                 <button
@@ -508,12 +523,25 @@ export default function DateTimePicker({
                 })}
               </div>
             </div>
-
-            {/* ── Divider ── */}
-            <div className="w-px bg-gray-100 my-4 shrink-0" />
-
-            {/* ── Time Picker ── */}
-            <div className="flex items-start gap-0.5 py-4 px-3">
+            ) : (
+            <div className="flex-1 p-4 pb-3 w-[320px] flex flex-col">
+              {/* ── Time Picker ── */}
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  type="button"
+                  onClick={() => setStep('date')}
+                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </button>
+                <span className="font-poppins font-semibold text-[14px] text-gray-800">
+                  Select Time
+                </span>
+                <div className="w-8 h-8" />
+              </div>
+              <div className="flex items-start justify-center gap-0.5 py-2">
               {/* Hours scroll */}
               <div
                 ref={hourRef}
@@ -593,7 +621,9 @@ export default function DateTimePicker({
                   </button>
                 ))}
               </div>
+              </div>
             </div>
+            )}
           </div>
 
           {/* ── Footer ── */}
@@ -605,13 +635,23 @@ export default function DateTimePicker({
             >
               Clear
             </button>
-            <button
-              type="button"
-              onClick={handleToday}
-              className="font-poppins text-[13px] font-semibold text-[#165ba7] hover:text-[#10437b] transition-colors"
-            >
-              Today
-            </button>
+            {step === 'date' ? (
+              <button
+                type="button"
+                onClick={handleToday}
+                className="font-poppins text-[13px] font-semibold text-[#165ba7] hover:text-[#10437b] transition-colors"
+              >
+                Today
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="font-poppins text-[13px] font-semibold text-[#165ba7] hover:text-[#10437b] transition-colors"
+              >
+                Done
+              </button>
+            )}
           </div>
         </div>
       )}
