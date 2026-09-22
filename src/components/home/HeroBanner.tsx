@@ -47,7 +47,7 @@ const slides = [
     ),
   },
   {
-    image: '/images/about/faqhero.png',
+    image: '/images/home/carebanner.png',
     topLabel: 'Care For Your Smile',
     topLabelColor: 'text-[#A0557A]',
     heading: (
