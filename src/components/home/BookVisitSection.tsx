@@ -110,7 +110,7 @@ export default function BookVisitSection() {
                     htmlFor="bv-date"
                     className="font-poppins text-sm font-semibold text-[#333]"
                   >
-                    Preferred Date & Time <span className="text-[#D35B8F]">*</span>
+                    Preferred Date<span className="text-[#D35B8F]">*</span>
                   </label>
                   <DateTimePicker
                     id="bv-date"
@@ -140,8 +140,8 @@ export default function BookVisitSection() {
                     className={`w-full h-[42px] border ${isDropdownOpen ? 'border-[#165ba7]' : 'border-gray-200'} rounded-md px-4 font-poppins text-[14px] flex items-center justify-between cursor-pointer transition-colors bg-white shadow-sm`}
                   >
                     <span className={formData.treatment ? 'text-[#333]' : 'text-gray-500'}>
-                      {formData.subTreatment 
-                        ? `${formData.treatment} - ${formData.subTreatment}` 
+                      {formData.subTreatment
+                        ? `${formData.treatment} - ${formData.subTreatment}`
                         : formData.treatment || 'Select Treatment'}
                     </span>
                     <div

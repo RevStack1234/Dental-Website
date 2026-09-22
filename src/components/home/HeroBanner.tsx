@@ -47,7 +47,7 @@ const slides = [
     ),
   },
   {
-    image: '/images/about/team-1.webp',
+    image: '/images/about/faqhero.png',
     topLabel: 'Care For Your Smile',
     topLabelColor: 'text-[#A0557A]',
     heading: (
@@ -222,9 +222,8 @@ export default function HeroBanner() {
           <div
             key={index}
             aria-hidden={currentSlide !== index}
-            className={`absolute inset-0 flex items-center pt-14 lg:pt-0 transition-opacity duration-1000 ease-in-out ${
-              currentSlide === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
-            }`}
+            className={`absolute inset-0 flex items-center pt-14 lg:pt-0 transition-opacity duration-1000 ease-in-out ${currentSlide === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
+              }`}
           >
             <img
               src={currentSlide === index ? slide.image : undefined}
@@ -240,11 +239,10 @@ export default function HeroBanner() {
               className={`absolute inset-0 h-full w-full object-cover h-hero-grad ${index === 1 ? 'object-[center_top]' : index === 0 ? 'object-top' : 'object-[60%_center]'}`}
             />
             <div
-              className={`absolute inset-0 h-full w-full h-hero-grad ${
-                index === 1
-                  ? 'bg-white/70 lg:bg-transparent lg:bg-gradient-to-r lg:from-white/60 lg:via-white/20'
-                  : 'bg-white/85 lg:bg-transparent lg:bg-gradient-to-r lg:from-white/90 lg:via-white/50'
-              } lg:to-transparent`}
+              className={`absolute inset-0 h-full w-full h-hero-grad ${index === 1
+                ? 'bg-white/70 lg:bg-transparent lg:bg-gradient-to-r lg:from-white/60 lg:via-white/20'
+                : 'bg-white/85 lg:bg-transparent lg:bg-gradient-to-r lg:from-white/90 lg:via-white/50'
+                } lg:to-transparent`}
             />
 
             <div className="relative z-20 w-full px-5 md:px-12 lg:px-0 lg:absolute lg:left-[4%] lg:top-[58%] lg:w-[700px] lg:-translate-y-1/2 flex flex-col items-start text-left gap-2.5 lg:gap-4 h-hero-txt">
